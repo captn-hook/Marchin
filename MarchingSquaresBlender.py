@@ -1,10 +1,12 @@
-#import bpy
+import bpy
+import time
 
 # Marching Squares Table
-AP_CD = False
-CUT = False
+WAIT = .3
 
-print_table = {}
+C = bpy.context
+S = C.scene
+D = bpy.data
 
 def corner_table():
     table = {}
@@ -17,109 +19,119 @@ def corner_table():
 
 table = corner_table()
 
-def fill(x = 1):
-    if x == 1:
-        return r"###:###:###"
-    else:
-        return r"   :   :   "
+def obj_cr(verts, faces, name, orientation = 0):
+    mesh = D.meshes.new(name + "_mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
     
-def half(x = 0):
-    #top
-    if x == 0:
-        return r"###:---:   "
-    #right
-    elif x == 1:
-        return r" |#: |#: |#"
-    #bottom
-    elif x == 2:
-        return r"   :---:###"
-    #left
-    else:
-        return r"#| :#| :#| "
-    
-def icorner(x = 0):
-    if x == 0:
-        return r" /#:/##:###"
-    #top right
-    elif x == 1:
-        return r"#\ :##\:###"
-    #bottom left
-    elif x == 2:
-        return r"###:\##: \#"
-    #bottom right
-    else:
-        return r"###:##/:#/ "
+    obj = D.objects.new(name, mesh)
+    obj.rotation_mode = 'XYZ'
+    obj.rotation_euler[2] = orientation * 1.5708
 
-def corner(x = 0):
-    if x  == 0:
-        return r"/  :   :   "
-    #top right
-    elif x == 1:
-        return r"  \:   :   "
-    #bottom left
-    elif x == 2:
-        return r"   :   :\  "
-    #bottom right
+    return obj
+
+def plane_mesh():
+    verts = [(-1,-1,0), (1,-1,0), (1,1,0), (-1,1,0)]
+    faces = [(0,1,2,3)]
+
+    return obj_cr(verts, faces, "plane")
+
+def half_plane(orientation = 0):
+    verts = [(-1,-1,0), (1,-1,0), (1,0,0), (-1,0,0)]
+    faces = [(0,1,2,3)]
+    return obj_cr(verts, faces, "half_plane", orientation)
+
+
+def triangle_mesh(orientation = 0):
+    verts = [(-1,-1,0), (0,-1,0), (-1,0,0)]
+    faces = [(0,1,2)]
+    return obj_cr(verts, faces, "triangle", orientation)
+
+def itriangle_mesh(orientation = 0):
+    verts = [(-1,-1,0), (-1,1,0), (0,1,0), (1,0,0), (1,-1,0)]
+    faces = [(0,1,2,3,4)]
+    return obj_cr(verts, faces, "itriangle", orientation)
+
+def line_mesh(orientation = False):
+    verts = [(-1, -1, 0), (0,-1,0), (1,0,0), (1,1,0), (0,1,0), (-1,0,0)]
+    faces = [(0,1,2,3,4,5)]
+
+    if orientation:
+        orientation = 1
     else:
-        return r"   :   :  /"
-    
-def acorner(x = False):
-    if x:
-        return r"#\ :\#\: \#"
-    else:
-        return r" /#:/#/:#/ "
- 
+        orientation = 0
+
+    return obj_cr(verts, faces, "line", orientation)
+
+#empty the scene
+for obj in D.objects:
+    D.objects.remove(obj)
+
+out_table = {}
+
 for i in table:
     v = table[i]
     value = v[0] + v[1] + v[2] + v[3]
     #if full case, where all corners are on or off
     if value == 4:
-        print_table[table[i]] = fill()
+        out_table[table[i]] = plane_mesh()
     elif value == 0:
-        print_table[table[i]] = fill(0)
+        out_table[table[i]] = None
     #if half case, where two adjacent corners are on and the other two are off
     elif value == 2 and (v[0] != v[3] and v[1] != v[2]):
         if v[0] == 1 and v[1] == 1:
-            print_table[table[i]] = half(0)
+            #top half
+            out_table[table[i]] = half_plane(0)
         elif v[1] == 1 and v[3] == 1:
-            print_table[table[i]] = half(1)
+            #right half
+            out_table[table[i]] = half_plane(1)
         elif v[2] == 1 and v[3] == 1:
-            print_table[table[i]] = half(2)
+            #bottom half
+            out_table[table[i]] = half_plane(2)
         elif v[0] == 1 and v[2] == 1:
-            print_table[table[i]] =  half(3)
+            #left half
+            out_table[table[i]] = half_plane(3)
         else:
             print("half error")
     #place empty corner
     elif value == 3:
         if v[0]  == 0:
-            print_table[table[i]] = icorner(0)
+            #top left empty
+            out_table[table[i]] = itriangle_mesh(2)
         elif v[1] == 0:
-            print_table[table[i]] = icorner(1)
+            #top right empty
+            out_table[table[i]] = itriangle_mesh(3)
         elif v[2] == 0:
-            print_table[table[i]] = icorner(2)
+            #bottom left empty
+            out_table[table[i]] = itriangle_mesh(1)
         elif v[3] == 0:
-            print_table[table[i]] = icorner(3)
+            #bottom right empty
+            out_table[table[i]] = itriangle_mesh(0)
         else:
             print("empty error")
     #place corner
     elif value == 1:
         if v[0]  == 1:
-            print_table[table[i]] = corner(0)
+            #top left
+            out_table[table[i]] = triangle_mesh(0)
         elif v[1] == 1:
-            print_table[table[i]] = corner(1)
+            #top right
+            out_table[table[i]] = triangle_mesh(1)
         elif v[2] == 1:
-            print_table[table[i]] = corner(2)
+            #bottom left
+            out_table[table[i]] = triangle_mesh(3)
         elif v[3] == 1:
-            print_table[table[i]] = corner(3)
+            #bottom right
+            out_table[table[i]] = triangle_mesh(2)
         else:
             print("full error")
     else:
         if v[0] == 1 and v[3] == 1:
             #top left bottom right
-            print_table[table[i]] = acorner(True)
+            out_table[table[i]] = line_mesh(False)
         elif v[1] == 1 and v[2] == 1:
             #top right and bottom left
-            print_table[table[i]] = acorner(False)
+            out_table[table[i]] = line_mesh(True)
         else:
             print("apposing error")
 
@@ -168,6 +180,8 @@ def march_result(x, y, thing):
     br = thing[y+1][x+1]
     return (tl, tr, bl, br)
 
+location_offset = (0, 0)
+
 for sample in s:
     for row in sample:
         for cell in row:
@@ -184,25 +198,30 @@ for sample in s:
         for x in range(len(sample[y]) - 1):
             ls.append(march_result(x, y, sample))
         qrtr_list.append(ls)
-
-    strn_list = []
-    strn = ''
+    
     for y in range(len(qrtr_list)):
-        strn_row = ["", "", ""]
         for x in range(len(qrtr_list[y])):
-            stn = print_table[qrtr_list[y][x]]
-            stn = stn.split(":")
+            #copy mesh, set location, and link to scene
+            cp = out_table[qrtr_list[y][x]]
 
-            for i in range(len(stn)):
-                stn[i] = stn[i]
-                strn_row[i] += stn[i]
-                if CUT:
-                    strn_row[0] += '|'
-        for i in range(len(strn_row)):
-            strn_row[i] += "\n"
-            strn += strn_row[i]
-        if CUT:
-            strn += len(qrtr_list[y]) * '____'
-            strn += '\n'
-    print("--------------------------------------")
-    print(strn)
+            if cp == None:
+                continue
+            else:
+                #wait for time
+                if WAIT > 0:
+                    #force blender to update
+                    C.view_layer.update()
+                    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                    time.sleep(WAIT)
+
+
+            objec = cp.copy()
+            objec.data = cp.data.copy()
+
+            objec.location = (x * 2 + location_offset[0], y * 2 + location_offset[1], 0)
+
+            C.collection.objects.link(objec)
+            objec.select_set(True)
+            C.view_layer.objects.active = objec
+    print(x, y)
+    location_offset = (location_offset[0]+x*2+3, location_offset[1]+y*2+3)
