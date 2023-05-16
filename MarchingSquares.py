@@ -62,11 +62,16 @@ def corner(x = 0):
     #bottom right
     else:
         return r"   :   :  /"
+    
+def acorner(x = False):
+    if x:
+        return r"#\ :\#\: \#"
+    else:
+        return r" /#:/#/:#/ "
  
 for i in table:
     v = table[i]
     value = v[0] + v[1] + v[2] + v[3]
-
     #if full case, where all corners are on or off
     if value == 4:
         print_table[table[i]] = fill()
@@ -74,70 +79,47 @@ for i in table:
         print_table[table[i]] = fill(0)
     #if half case, where two adjacent corners are on and the other two are off
     elif value == 2 and (v[0] != v[3] and v[1] != v[2]):
-        #top
         if v[0] == 1 and v[1] == 1:
             print_table[table[i]] = half(0)
-        #right
         elif v[1] == 1 and v[3] == 1:
             print_table[table[i]] = half(1)
-        #bottom
         elif v[2] == 1 and v[3] == 1:
             print_table[table[i]] = half(2)
-        #left
         elif v[0] == 1 and v[2] == 1:
             print_table[table[i]] =  half(3)
         else:
             print("half error")
     #place empty corner
     elif value == 3:
-        #top left
         if v[0]  == 0:
             print_table[table[i]] = icorner(0)
-        #top right
         elif v[1] == 0:
             print_table[table[i]] = icorner(1)
-        #bottom left
         elif v[2] == 0:
             print_table[table[i]] = icorner(2)
-        #bottom right
         elif v[3] == 0:
             print_table[table[i]] = icorner(3)
         else:
             print("empty error")
     #place corner
     elif value == 1:
-    
         if v[0]  == 1:
-            print_table[table[i]] = r"/  :   :   "
-        #top right
+            print_table[table[i]] = corner(0)
         elif v[1] == 1:
-            print_table[table[i]] = r"  \:   :   "
-        #bottom left
+            print_table[table[i]] = corner(1)
         elif v[2] == 1:
-            print_table[table[i]] = r"   :   :\  "
-        #bottom right
+            print_table[table[i]] = corner(2)
         elif v[3] == 1:
-            print_table[table[i]] = r"   :   :  /"
+            print_table[table[i]] = corner(3)
         else:
             print("full error")
-    #place apposing corners
-    elif AP_CD:
-        #print("APOSE")
-        if v[0] == 1 and v[3] == 1:
-            #top left bottom right
-            print_table[table[i]] = r"#/ :/ /: /#"
-        elif v[1] == 1 and v[2] == 1:
-            #top right and bottom left
-            print_table[table[i]] = r" \#:\ \:#\ "
-        else:
-            print("apposing error")
     else:
         if v[0] == 1 and v[3] == 1:
             #top left bottom right
-            print_table[table[i]] = r"#\ :\#\: \#"
+            print_table[table[i]] = acorner(True)
         elif v[1] == 1 and v[2] == 1:
             #top right and bottom left
-            print_table[table[i]] = r" /#:/#/:#/ "
+            print_table[table[i]] = acorner(False)
         else:
             print("apposing error")
 
@@ -179,29 +161,14 @@ s3 = [
 
 s = [s1, s2, s3]
 
-def giv_me_the_thing(x, y, thing):
-
-    # print("--------------------------------------")
-    # print('getting', x, y)
-    # for yi in range(len(thing)):
-    #     if yi == y:
-    #         print(" " * (3 * x + 2) + "\/")
-    #         print(thing[yi])
-    #         print(thing[yi + 1])
-    # print("--")
+def march_result(x, y, thing):
     tl = thing[y][x]
     tr = thing[y][x+1]
     bl = thing[y+1][x]
     br = thing[y+1][x+1]
-    # print(str(tl) + str(tr) + '\n' + str(bl) + str(br))
-    # print("--------------------------------------")
     return (tl, tr, bl, br)
 
-
-# print("--------------------------------------")
 for sample in s:
-
-    # print("--------------------------------------")
     for row in sample:
         for cell in row:
             if cell == 1:
@@ -210,61 +177,32 @@ for sample in s:
                 print(" ", end="")
         print()
     print()
-    # print("--------------------------------------")
     qrtr_list = []
-    
+    #march through the sample
     for y in range(len(sample) - 1):
         ls = []
         for x in range(len(sample[y]) - 1):
-            ls.append(giv_me_the_thing(x, y, sample))
+            ls.append(march_result(x, y, sample))
         qrtr_list.append(ls)
 
-    # for row in sample:
-    #     print(row, len(row))
-    # for row in qrtr_list:
-    #     print(row, len(row))
-        
-    #print_table will return 3 lines
-    #split on new line and put into 3 lines for that row
     strn_list = []
     strn = ''
     for y in range(len(qrtr_list)):
         strn_row = ["", "", ""]
         for x in range(len(qrtr_list[y])):
             stn = print_table[qrtr_list[y][x]]
-            #split and remove new line
-            #print(stn)
             stn = stn.split(":")
-            # print(stn[0])
-            # print(stn[1])
-            # print(stn[2])
-            # print("____")
-            stn[0] = stn[0]
-            stn[1] = stn[1]
-            stn[2] = stn[2]
-            #fix backslash by doubling
-            # stn[0] = stn[0].replace('\\', "\\")
-            # stn[1] = stn[1].replace('\\', "\\")
-            # stn[2] = stn[2].replace('\\', "\\")
-            # print(stn)
-            strn_row[0] += stn[0]
-            strn_row[1] += stn[1]
-            strn_row[2] += stn[2]
-            if CUT:
-                strn_row[0] += '|'
-                strn_row[1] += '|'
-                strn_row[2] += '|'
-        #print('---------------------')
-        strn_row[0] += "\n"
-        strn_row[1] += "\n"
-        strn_row[2] += "\n"
 
-        strn += strn_row[0]
-        strn += strn_row[1]
-        strn += strn_row[2]
+            for i in range(len(stn)):
+                stn[i] = stn[i]
+                strn_row[i] += stn[i]
+                if CUT:
+                    strn_row[0] += '|'
+        for i in range(len(strn_row)):
+            strn_row[i] += "\n"
+            strn += strn_row[i]
         if CUT:
             strn += len(qrtr_list[y]) * '____'
             strn += '\n'
     print("--------------------------------------")
     print(strn)
-    # print("--------------------------------------")
