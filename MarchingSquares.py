@@ -3,97 +3,123 @@
 # Marching Squares Table
 AP_CD = False
 CUT = False
-table = {}
-print_table = {}
-for i in range(16):
-    cs =[int(x) for x in bin(i)[2:].zfill(4)]
-    #cs to tuple to make it hashable
-    corners = tuple(cs)
-    table[i] = corners
 
-#Display table for terminal
+print_table = {}
+
+def corner_table():
+    table = {}
+    for i in range(16):
+        cs =[int(x) for x in bin(i)[2:].zfill(4)]
+        #cs to tuple to make it hashable
+        corners = tuple(cs)
+        table[i] = corners
+    return table
+
+table = corner_table()
+
+def fill(x = 1):
+    if x == 1:
+        return r"###:###:###"
+    else:
+        return r"   :   :   "
+    
+def half(x = 0):
+    #top
+    if x == 0:
+        return r"###:---:   "
+    #right
+    elif x == 1:
+        return r" |#: |#: |#"
+    #bottom
+    elif x == 2:
+        return r"   :---:###"
+    #left
+    else:
+        return r"#| :#| :#| "
+    
+def icorner(x = 0):
+    if x == 0:
+        return r" /#:/##:###"
+    #top right
+    elif x == 1:
+        return r"#\ :##\:###"
+    #bottom left
+    elif x == 2:
+        return r"###:\##: \#"
+    #bottom right
+    else:
+        return r"###:##/:#/ "
+
+def corner(x = 0):
+    if x  == 0:
+        return r"/  :   :   "
+    #top right
+    elif x == 1:
+        return r"  \:   :   "
+    #bottom left
+    elif x == 2:
+        return r"   :   :\  "
+    #bottom right
+    else:
+        return r"   :   :  /"
+ 
 for i in table:
     v = table[i]
-    #print(str(v[0])+str(v[1])+'\n'+str(v[2])+str(v[3])+'\n')
-
     value = v[0] + v[1] + v[2] + v[3]
 
     #if full case, where all corners are on or off
-    if value == 4 or value == 0:
-        #print("FULL")
-        #if empty case, where all corners are on or off
-        if v[0] == 0:
-            print_table[table[i]] = r"   :   :   "
-        elif v[0] == 1:
-            print_table[table[i]] = r"###:###:###"
-        else:
-            print("half error")
+    if value == 4:
+        print_table[table[i]] = fill()
+    elif value == 0:
+        print_table[table[i]] = fill(0)
     #if half case, where two adjacent corners are on and the other two are off
     elif value == 2 and (v[0] != v[3] and v[1] != v[2]):
-        #print("HALF")
         #top
         if v[0] == 1 and v[1] == 1:
-            print_table[table[i]] = r"###:---:   "
+            print_table[table[i]] = half(0)
         #right
         elif v[1] == 1 and v[3] == 1:
-            print_table[table[i]] = r" |#: |#: |#"
+            print_table[table[i]] = half(1)
         #bottom
         elif v[2] == 1 and v[3] == 1:
-            print_table[table[i]] = r"   :---:###"
+            print_table[table[i]] = half(2)
         #left
         elif v[0] == 1 and v[2] == 1:
-            print_table[table[i]] = r"#| :#| :#| "
+            print_table[table[i]] =  half(3)
         else:
             print("half error")
     #place empty corner
     elif value == 3:
-        #print("EMPTY CORNER")
         #top left
         if v[0]  == 0:
-            print_table[table[i]] = r" /#:/##:###"
+            print_table[table[i]] = icorner(0)
         #top right
         elif v[1] == 0:
-            print_table[table[i]] = r"#\ :##\:###"
+            print_table[table[i]] = icorner(1)
         #bottom left
         elif v[2] == 0:
-            print_table[table[i]] = r"###:\##: \#"
+            print_table[table[i]] = icorner(2)
         #bottom right
         elif v[3] == 0:
-            print_table[table[i]] = r"###:##/:#/ "
+            print_table[table[i]] = icorner(3)
         else:
             print("empty error")
     #place corner
     elif value == 1:
-        #print("CORNER")
-        #top left
-        if AP_CD:
-            if v[0]  == 1:
-                print_table[table[i]] = r"#/ :/  :   "
-            #top right
-            elif v[1] == 1:
-                print_table[table[i]] = r" \#:  \:   "
-            #bottom left
-            elif v[2] == 1:
-                print_table[table[i]] = r"   :\  :#\ "
-            #bottom right
-            elif v[3] == 1:
-                print_table[table[i]] = r"   :  /: /#"
-            else:
-                print("full error")
+    
+        if v[0]  == 1:
+            print_table[table[i]] = r"/  :   :   "
+        #top right
+        elif v[1] == 1:
+            print_table[table[i]] = r"  \:   :   "
+        #bottom left
+        elif v[2] == 1:
+            print_table[table[i]] = r"   :   :\  "
+        #bottom right
+        elif v[3] == 1:
+            print_table[table[i]] = r"   :   :  /"
         else:
-            if v[0]  == 1:
-                print_table[table[i]] = r"/  :   :   "
-            #top right
-            elif v[1] == 1:
-                print_table[table[i]] = r"  \:   :   "
-            #bottom left
-            elif v[2] == 1:
-                print_table[table[i]] = r"   :   :\  "
-            #bottom right
-            elif v[3] == 1:
-                print_table[table[i]] = r"   :   :  /"
-            else:
-                print("full error")
+            print("full error")
     #place apposing corners
     elif AP_CD:
         #print("APOSE")
