@@ -9,7 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D, art3d
 
 GRAPH_SIZE = (20, 20, 20)
 LIMIT = 15
-INTERP = False
+INTERP = True
 
 def import_table(file_name = "table2.txt"):
     #get json from table2.txt 14- 271
@@ -83,14 +83,14 @@ def graph_v(v):
     plt.show()
     
 def sample(s):
-    values = np.zeros(GRAPH_SIZE)
-    for x in range(GRAPH_SIZE[0]):
-        for y in range(GRAPH_SIZE[1]):
-            for z in range(GRAPH_SIZE[2]):
+    values = np.zeros((GRAPH_SIZE[0] * 2, GRAPH_SIZE[1] * 2, GRAPH_SIZE[2] * 2))
+    for x in range(-GRAPH_SIZE[0], GRAPH_SIZE[0]):
+        for y in range(-GRAPH_SIZE[1], GRAPH_SIZE[1]):
+            for z in range(-GRAPH_SIZE[2], GRAPH_SIZE[2]):
                 if s(x, y, z) > LIMIT:
                     values[x][y][z] = LIMIT
-                elif s(x, y, z) < 0:
-                    values[x][y][z] = 0
+                elif s(x, y, z) < -LIMIT:
+                    values[x][y][z] = -LIMIT
                 else:
                     values[x][y][z] = s(x, y, z)
     return values
@@ -175,15 +175,19 @@ def vc(v):
     elif v == 7:
         return (0, 1, 1)
     
-def interp(v1, v2, val1 = 0, val2 = 0):
-    #interpolates between two points
-    diff = val1 - val2
+def interp(p1, p2, val1 = 0, val2 = 0):
+    #interpolates between two points P = P1 + (isovalue - V1) (P2 - P1) / (V2 - V1)
+    diff = val2 - val1
+    pos_dif = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])
     if diff == 0:
-        #return the midpoint
-        return ((v1[0] + v2[0]) / 2, (v1[1] + v2[1]) / 2, (v1[2] + v2[2]) / 2)
+        #return midpoint
+        return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2)
     else:
-        #weight the midpoint based on the difference
-        return ((v1[0] + v2[0]) / 2 + diff, (v1[1] + v2[1]) / 2 + diff, (v1[2] + v2[2]) / 2 + diff)
+        x = p1[0] + (LIMIT/2 - val1) * pos_dif[0] / diff
+        y = p1[1] + (LIMIT/2 - val1) * pos_dif[1] / diff
+        z = p1[2] + (LIMIT/2 - val1) * pos_dif[2] / diff
+
+        return (x, y, z)
 
 def get_vert(e, corners, values):
     v1, v2 = e2v(e)
@@ -210,7 +214,6 @@ def construct_tri(values, x, y, z):
     
     verts = []
     #each edge has 1*3 to 4*3 values, every 3 is a face
-    print(len(edges), edges)
     for i in edges:
         verts.append(get_vert(i, corners, values))
         
@@ -218,24 +221,16 @@ def construct_tri(values, x, y, z):
 
 def construct_mesh(values):
     verts = []
-    for x in range(GRAPH_SIZE[0] - 1):
-        for y in range(GRAPH_SIZE[1] - 1):
-            for z in range(GRAPH_SIZE[2] - 1):
+    for x in range(-GRAPH_SIZE[0] + 1, GRAPH_SIZE[0] - 1):
+        for y in range(-GRAPH_SIZE[1] + 1, GRAPH_SIZE[1] - 1):
+            for z in range(-GRAPH_SIZE[2] + 1, GRAPH_SIZE[2] - 1):
                 v = construct_tri(values, x, y, z)
                 if v != None:
                     verts.extend(v)
     return verts
 
-
-vs = np.array([[0,0,0], [1,0,0], [1,1,0], [0,1,0], 
-              [0,0,1], [1,0,1], [1,1,1], [0,1,1]])
-
-fs = np.array([[0,2,1], [0,3,2], [1,2,6], [1,6,5],
-              [0,5,4], [0,1,5], [4,5,6], [6,7,4],
-              [3,7,6], [6,2,3], [0,4,7], [7,3,0]])
-
 def main():
-    graph_v(construct_mesh(sample(sample_1)))
+    graph_v(construct_mesh(sample(sample_4)))
 
 if __name__ == "__main__":
     main()
