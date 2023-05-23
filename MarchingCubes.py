@@ -226,7 +226,11 @@ def construct_mesh(values):
             for z in range(-GRAPH_SIZE[2] + 1, GRAPH_SIZE[2] - 1):
                 v = construct_tri(values, x, y, z)
                 if v != None:
-                    verts.extend(v)
+                    E = False
+                    if E:
+                        verts.extend(v)
+                    else:
+                        verts.append(v)
     return verts
 
 def main():
