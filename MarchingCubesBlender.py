@@ -6,10 +6,8 @@ C = bpy.context
 S = C.scene
 D = bpy.data
 
-WAIT = 0 #.3
-
 GRAPH_SIZE = (20, 20, 20)
-LIMIT = 15
+LIMIT = 10
 INTERP = True
 
 lookup_table = [
@@ -275,9 +273,9 @@ lookup_table = [
 def sample_0(x, y, z):
     return x + y + z
 
-def sample_1(x, y, z):
+def sample_1(x, y, z, offx=0, offy=0, offz=0, scale=1):
     #returns distance from origin
-    return np.sqrt(x**2 + y**2 + z**2) - 1
+    return np.sqrt(((x - offx) * scale)**2 + ((y - offy) * scale)**2 + ((z - offz) * scale)**2) - 1
 
 def sample_2(x, y, z):
     #returns distance from origin, except double the z axis
@@ -288,20 +286,42 @@ def sample_3(x, y, z):
     return x**2 - y**2 - z**2
 
 def sample_4(x, y, z):
-    #returns a double saddle
-    return x**2 - y**2 - z**2 - 1
-
-def sample_5(x, y, z):
     #returns a cone
     return np.sqrt(x**2 + y**2) - z
 
-def sample_6(x, y, z):
-    #returns a double cone
-    return np.sqrt(x**2 + y**2) - z - 1
-
-def sample_7(x, y, z):
+def sample_5(x, y, z):
     #returns a cylinder
     return np.sqrt(x**2 + y**2) - 1
+
+def sample_6(x, y, z):
+    #7xy/e^(x^2 + y^2)
+    return 7*x*y/np.exp(x**2 + y**2)
+
+def sample_8(x, y, z, offx=0, offy=0, offz=0, scale=.1):
+    #returns a 2d parabola
+    return (x - offx)**2 + ((y - offy) * scale)**2 - (z - offz)
+
+def sample_9(x, y, z, offx=0, offy=0, offz=0):
+    #return min of two parabolas
+    return max(sample_8(x, y, -z, offx, offy, offz), sample_8(x, y, z, offx, offy, offz + 5, .4))
+    
+def sample_10(x, y, z):
+    #returns a smiley face
+    return min(sample_1(x, y, z, 0, -6, 14, 4), sample_1(x, y, z, 0, 6, 14, 4), sample_9(x, y, z))
+
+def anim(obj, i, single_frame=False):
+    #create driver for the object's visibility
+    d = obj.driver_add('hide_render')
+    #driver = obj_nun > frame_number
+    if single_frame:
+        fr = '== frame'
+    else:
+        fr = '> frame'
+    d.driver.expression = str(i) + fr
+    
+    #copy the driver to the viewport visibility
+    d2 = obj.driver_add('hide_viewport')
+    d2.driver.expression = str(i) + fr
 
 def sample(s):
     values = np.zeros((GRAPH_SIZE[0] * 2, GRAPH_SIZE[1] * 2, GRAPH_SIZE[2] * 2))
@@ -463,19 +483,32 @@ def construct_tri(values, x, y, z):
         
     return verts
 
+def set_cursor(cursor, x, y, z, frame = 0):
+    cursor.location = (x, y, z)
+    cursor.keyframe_insert(data_path = "location", frame = frame)
+
 def construct_mesh(values):
     verts = []
+    #cursor = cursor_mesh()
+    i = 0
+    ls = []
     for x in range(-GRAPH_SIZE[0] + 1, GRAPH_SIZE[0] - 1):
         for y in range(-GRAPH_SIZE[1] + 1, GRAPH_SIZE[1] - 1):
             for z in range(-GRAPH_SIZE[2] + 1, GRAPH_SIZE[2] - 1):
+                print("GRAPH", x, y, z)
+                i += 1
+                #set_cursor(cursor, x, y, z, i)
                 v = construct_tri(values, x, y, z)
                 if v != None:
+                    ls.append(True)
                     E = False
                     if E:
                         verts.extend(v)
                     else:
                         verts.append(v)
-    return verts
+                else:
+                    ls.append(False)
+    return verts, ls
 
 def obj_cr(verts, name):
     mesh = D.meshes.new(name + "_mesh")
@@ -493,32 +526,45 @@ def obj_cr(verts, name):
 
     return obj
 
+def cursor_mesh():
+    #verts are the 8 corners of the cube
+    verts = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
+             (0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+    faces = [(0, 1, 2, 3), (4, 5, 6, 7),
+             (0, 1, 5, 4), (1, 2, 6, 5),
+             (2, 3, 7, 6), (3, 0, 4, 7)]
+    
+    mesh = D.meshes.new("cursor_mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+
+    obj = D.objects.new("cursor", mesh)
+
+    C.collection.objects.link(obj)
+
+    return obj
+    
 #empty the scene
 for obj in D.objects:
     D.objects.remove(obj)
 
-verts = construct_mesh(sample(sample_1))
+verts, steps = construct_mesh(sample(sample_10))
 
 # for face in verts:
 i = 0
-for f in verts:
+j = 0
+for step in steps:
     i += 1
-    
-    #create mesh
-    
-    objec = obj_cr(f, str(i))
+    if step:
+        print("STEP" + str(i))
+        #create mesh
+        objec = obj_cr(verts[j], "cube_" + str(i))
+        j += 1  
+        if objec == None:
+            continue
+        else:
+            anim(objec, i)            
 
-    if objec == None:
-        continue
-    else:
-        #wait for time
-        if WAIT > 0:
-            #force blender to update
-            C.view_layer.update()
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-            time.sleep(WAIT)
-
-
-    C.collection.objects.link(objec)
-    objec.select_set(True)
-    C.view_layer.objects.active = objec
+        C.collection.objects.link(objec)
+        objec.select_set(True)
+        C.view_layer.objects.active = objec

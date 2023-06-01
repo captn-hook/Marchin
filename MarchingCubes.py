@@ -7,8 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D, art3d
 
-GRAPH_SIZE = (20, 20, 20)
-LIMIT = 15
+GRAPH_SIZE =(20, 20, 20)
+LIMIT = 10
 INTERP = True
 
 def import_table(file_name = "table2.txt"):
@@ -35,9 +35,9 @@ lookup_table = import_table()
 def sample_0(x, y, z):
     return x + y + z
 
-def sample_1(x, y, z):
+def sample_1(x, y, z, offx=0, offy=0, offz=0, scale=1):
     #returns distance from origin
-    return np.sqrt(x**2 + y**2 + z**2) - 1
+    return np.sqrt(((x - offx) * scale)**2 + ((y - offy) * scale)**2 + ((z - offz) * scale)**2) - 1
 
 def sample_2(x, y, z):
     #returns distance from origin, except double the z axis
@@ -63,6 +63,17 @@ def sample_7(x, y, z):
     #returns a cylinder
     return np.sqrt(x**2 + y**2) - 1
 
+def sample_8(x, y, z, offx=0, offy=0, offz=0, scale=.1):
+    #returns a 2d parabola
+    return (x - offx)**2 + ((y - offy) * scale)**2 - (z - offz)
+
+def sample_9(x, y, z, offx=0, offy=0, offz=0):
+    #return min of two parabolas
+    return max(sample_8(x, y, -z, offx, offy, offz), sample_8(x, y, z, offx, offy, offz + 5, .4))
+    
+def sample_10(x, y, z):
+    #returns a smiley face
+    return min(sample_1(x, y, z, 0, -6, 14, 4), sample_1(x, y, z, 0, 6, 14, 4), sample_9(x, y, z))
 def graph_v(v):
     
     fig = plt.figure()
@@ -77,7 +88,15 @@ def graph_v(v):
         if len(temp) >= 3:
             verts.append(temp.copy())
             temp = []
-    pc = art3d.Poly3DCollection(verts, edgecolor="black")
+    #Poly3DCollection wants a list of (N, 3) array-like
+    lis = []
+    for cell in verts:
+        for face in cell:
+            lis.append(face)
+
+    print(lis)
+    
+    pc = art3d.Poly3DCollection(lis, edgecolor="black")
     ax.add_collection(pc)
 
     plt.show()
@@ -234,7 +253,7 @@ def construct_mesh(values):
     return verts
 
 def main():
-    graph_v(construct_mesh(sample(sample_4)))
+    graph_v(construct_mesh(sample(sample_10)))
 
 if __name__ == "__main__":
     main()
